@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Course Registration System — Register students, manage enrollments, and view analytics.">
+    <title>Course Registration System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <!-- Particle Canvas Background -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Custom Confirm Modal -->
+    <div class="confirm-overlay hidden" id="confirmModal">
+        <div class="confirm-box glass-card">
+            <div class="confirm-icon" id="confirmIcon">⚠️</div>
+            <h3 id="confirmTitle">Are you sure?</h3>
+            <p id="confirmMessage">This action cannot be undone.</p>
+            <div class="confirm-actions">
+                <button class="btn btn-ghost" id="confirmCancel">Cancel</button>
+                <button class="btn btn-danger" id="confirmOk">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-brand">
+            <div class="brand-logo">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                    <rect width="28" height="28" rx="8" fill="url(#grad)" />
+                    <path d="M8 10h12M8 14h8M8 18h10" stroke="#fff" stroke-width="2" stroke-linecap="round" />
+                    <defs>
+                        <linearGradient id="grad" x1="0" y1="0" x2="28" y2="28">
+                            <stop stop-color="#6366f1" />
+                            <stop offset="1" stop-color="#a855f7" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <span class="nav-title">CourseReg<span class="nav-pro">PRO</span></span>
+        </div>
+        <div class="nav-links">
+            <button class="nav-link active" id="navRegister" data-view="register">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+                Register
+            </button>
+            <button class="nav-link" id="navDashboard" data-view="dashboard">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <rect x="1" y="8" width="3" height="6" rx="1" fill="currentColor" />
+                    <rect x="6.5" y="4" width="3" height="10" rx="1" fill="currentColor" />
+                    <rect x="12" y="1" width="3" height="13" rx="1" fill="currentColor" />
+                </svg>
+                Dashboard
+            </button>
+            <button class="nav-link" id="navAdmin" data-view="admin">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    <circle cx="5" cy="4" r="1.5" fill="currentColor" />
+                    <circle cx="11" cy="8" r="1.5" fill="currentColor" />
+                    <circle cx="7" cy="12" r="1.5" fill="currentColor" />
+                </svg>
+                Admin
+            </button>
+        </div>
+        <div class="nav-actions">
+            <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+                <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
+                    <circle cx="12" cy="12" r="5" />
+                    <path
+                        d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                </svg>
+                <svg class="icon-moon hidden" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero" id="heroSection">
+        <div class="hero-content">
+            <div class="hero-badge">✨ Modern Course Management Platform</div>
+            <h1 class="hero-title">
+                Course Registration
+                <br><span class="highlight">System</span>
+            </h1>
+            <p class="hero-subtitle">Seamlessly register, manage, and analyze student course enrollments with a powerful
+                admin dashboard.</p>
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <span class="hero-stat-num" id="heroTotalReg">0</span>
+                    <span class="hero-stat-label">Registrations</span>
+                </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat">
+                    <span class="hero-stat-num" id="heroTotalStu">0</span>
+                    <span class="hero-stat-label">Students</span>
+                </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat">
+                    <span class="hero-stat-num" id="heroTotalCrs">10</span>
+                    <span class="hero-stat-label">Courses</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- =================== REGISTER VIEW =================== -->
+    <main class="container" id="registerView">
+        <section class="form-section">
+            <div class="section-header">
+                <h2><span class="section-icon">📝</span> Student Registration</h2>
+                <p>Fill in your details and select a course to enroll</p>
+            </div>
+            <form id="registrationForm" class="glass-card form-card" novalidate>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="studentName">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                                <circle cx="12" cy="7" r="4" />
+                            </svg>
+                            Student Name
+                        </label>
+                        <input type="text" id="studentName" name="name" placeholder="Enter your full name" required
+                            autocomplete="name">
+                        <span class="field-error" id="nameError"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="studentEmail">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                                <path d="M22 6l-10 7L2 6" />
+                            </svg>
+                            Email Address
+                        </label>
+                        <input type="email" id="studentEmail" name="email" placeholder="Enter your email address"
+                            required autocomplete="email">
+                        <span class="field-error" id="emailError"></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="courseSelect">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+                        </svg>
+                        Select Course
+                    </label>
+                    <select id="courseSelect" name="course_id" required>
+                        <option value="">— Choose a course —</option>
+                    </select>
+                    <span class="field-error" id="courseError"></span>
+                </div>
+                <button type="submit" class="btn btn-primary btn-glow" id="submitBtn">
+                    <span class="btn-text">Register Now</span>
+                    <span class="btn-loader" id="submitLoader"></span>
+                    <svg class="btn-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </button>
+            </form>
+        </section>
+    </main>
+
+    <!-- =================== DASHBOARD VIEW =================== -->
+    <main class="container wide hidden" id="dashboardView">
+        <section class="dashboard-section">
+            <div class="section-header">
+                <h2><span class="section-icon">📊</span> Analytics Dashboard</h2>
+                <p>Real-time overview of course registration metrics</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card glass-card stat-gradient-1">
+                    <div class="stat-icon-wrap"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                            <circle cx="8.5" cy="7" r="4" />
+                            <path d="M20 8v6M23 11h-6" />
+                        </svg></div>
+                    <div class="stat-info">
+                        <span class="stat-number counter" data-target="0" id="dashTotalReg">0</span>
+                        <span class="stat-label">Total Registrations</span>
+                    </div>
+                    <div class="stat-trend up" id="trendReg">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 9l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                        </svg>
+                        Active
+                    </div>
+                </div>
+                <div class="stat-card glass-card stat-gradient-2">
+                    <div class="stat-icon-wrap"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+                        </svg></div>
+                    <div class="stat-info">
+                        <span class="stat-number counter" data-target="0" id="dashTotalStu">0</span>
+                        <span class="stat-label">Unique Students</span>
+                    </div>
+                    <div class="stat-trend up">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 9l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                        </svg>
+                        Growing
+                    </div>
+                </div>
+                <div class="stat-card glass-card stat-gradient-3">
+                    <div class="stat-icon-wrap"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+                        </svg></div>
+                    <div class="stat-info">
+                        <span class="stat-number counter" data-target="0" id="dashTotalCrs">0</span>
+                        <span class="stat-label">Available Courses</span>
+                    </div>
+                    <div class="stat-trend neutral">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 6h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                        </svg>
+                        Stable
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="charts-row">
+                <div class="chart-card glass-card">
+                    <div class="chart-header">
+                        <h3>Course Enrollment Distribution</h3>
+                        <span class="chart-badge">Live Data</span>
+                    </div>
+                    <div class="chart-body" id="enrollmentChart">
+                        <div class="skeleton-chart"></div>
+                    </div>
+                </div>
+                <div class="activity-card glass-card">
+                    <div class="chart-header">
+                        <h3>Recent Activity</h3>
+                        <span class="chart-badge">Last 5</span>
+                    </div>
+                    <div class="activity-list" id="recentActivity">
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- =================== ADMIN VIEW =================== -->
+    <main class="container wide hidden" id="adminView">
+        <section class="admin-section">
+            <div class="section-header">
+                <h2><span class="section-icon">⚙️</span> Admin Panel</h2>
+                <p>Manage all student registrations</p>
+            </div>
+
+            <!-- Admin Toolbar -->
+            <div class="admin-toolbar glass-card">
+                <div class="toolbar-left">
+                    <div class="search-box">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="M21 21l-4.35-4.35" />
+                        </svg>
+                        <input type="text" id="searchInput" placeholder="Search students..." autocomplete="off">
+                        <kbd class="search-kbd">Ctrl+K</kbd>
+                    </div>
+                    <div class="filter-box">
+                        <select id="filterCourse">
+                            <option value="">All Courses</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="toolbar-right">
+                    <button class="btn btn-sm btn-ghost" id="exportBtn" title="Export CSV">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+                        </svg>
+                        Export
+                    </button>
+                    <button class="btn btn-sm btn-danger hidden" id="bulkDeleteBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                        </svg>
+                        Delete (<span id="bulkCount">0</span>)
+                    </button>
+                    <button class="btn btn-sm btn-secondary" id="refreshBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M23 4v6h-6M1 20v-6h6" />
+                            <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="table-wrapper glass-card">
+                <div class="table-scroll">
+                    <table id="registrationsTable">
+                        <thead>
+                            <tr>
+                                <th class="th-check"><input type="checkbox" id="selectAll" title="Select all"></th>
+                                <th>Student</th>
+                                <th>Email</th>
+                                <th>Course</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr>
+                                <td colspan="6" class="empty-state">
+                                    <div class="skeleton-table">
+                                        <div class="skeleton-row"></div>
+                                        <div class="skeleton-row"></div>
+                                        <div class="skeleton-row"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Pagination -->
+                <div class="pagination" id="pagination"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Edit Modal -->
+    <div class="modal-overlay hidden" id="editModal">
+        <div class="modal glass-card">
+            <div class="modal-header">
+                <h3>✏️ Edit Registration</h3>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <form id="editForm">
+                <input type="hidden" id="editRegId">
+                <div class="form-group">
+                    <label for="editName">Student Name</label>
+                    <input type="text" id="editName" required>
+                </div>
+                <div class="form-group">
+                    <label for="editEmail">Email</label>
+                    <input type="email" id="editEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="editCourse">Course</label>
+                    <select id="editCourse" required>
+                        <option value="">— Choose a course —</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-ghost" id="cancelEdit">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Team Section -->
+    <section class="team-section" id="teamSection">
+        <div class="team-container">
+            <h2 class="team-heading">Developed By</h2>
+            <p class="team-subtitle">Final Year Project Team</p>
+            <div class="team-grid">
+                <div class="team-card glass-card">
+                    <div class="team-avatar" style="background: linear-gradient(135deg, #6366f1, #a855f7);">JR</div>
+                    <h4 class="team-name">Jaiprasanna R K</h4>
+                    <span class="team-role">Full Stack Developer</span>
+                </div>
+                <div class="team-card glass-card">
+                    <div class="team-avatar" style="background: linear-gradient(135deg, #a855f7, #ec4899);">KB</div>
+                    <h4 class="team-name">Kumaresan B</h4>
+                    <span class="team-role">Full Stack Developer</span>
+                </div>
+                <div class="team-card glass-card">
+                    <div class="team-avatar" style="background: linear-gradient(135deg, #22d3ee, #6366f1);">LS</div>
+                    <h4 class="team-name">Lohith S</h4>
+                    <span class="team-role">Full Stack Developer</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>© 2026 CourseReg PRO &bull; Course Registration System</p>
+            <p class="footer-sub">Designed &amp; Developed by Jaiprasanna R K, Kumaresan B &amp; Lohith S</p>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+
+</html>
