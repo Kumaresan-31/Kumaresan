@@ -173,7 +173,7 @@ themeToggle.addEventListener('click', () => {
 });
 
 // Init theme
-setTheme(localStorage.getItem('theme') || 'dark');
+setTheme(localStorage.getItem('theme') || 'light');
 
 // =================== TOAST ===================
 function showToast(message, type = 'success') {
