@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+﻿const pool = require('../config/db');
 
 // Register a new student and their course
 const registerStudent = async (req, res) => {
@@ -77,25 +77,74 @@ const getRegistrations = async (req, res) => {
     }
 };
 
+const resetAutoIncrementCounters = async (connection) => {
+    // Setting AUTO_INCREMENT to 1 makes MySQL reuse the next available value (MAX(id) + 1).
+    await connection.query('ALTER TABLE registrations AUTO_INCREMENT = 1');
+    await connection.query('ALTER TABLE students AUTO_INCREMENT = 1');
+};
+
+const resequenceStudentIds = async (connection) => {
+    const [students] = await connection.query('SELECT id FROM students ORDER BY id ASC');
+    if (students.length === 0) {
+        await connection.query('ALTER TABLE students AUTO_INCREMENT = 1');
+        return;
+    }
+
+    const idMap = students.map((row, idx) => ({ oldId: row.id, newId: idx + 1 }));
+    const needsResequence = idMap.some(({ oldId, newId }) => oldId !== newId);
+    if (!needsResequence) {
+        await connection.query('ALTER TABLE students AUTO_INCREMENT = 1');
+        return;
+    }
+
+    await connection.query('SET FOREIGN_KEY_CHECKS = 0');
+    try {
+        // Move IDs to a safe range first to avoid duplicate-key collisions.
+        await connection.query('UPDATE students SET id = id + 1000000');
+        await connection.query('UPDATE registrations SET student_id = student_id + 1000000');
+
+        for (const { oldId, newId } of idMap) {
+            await connection.query('UPDATE students SET id = ? WHERE id = ?', [newId, oldId + 1000000]);
+            await connection.query('UPDATE registrations SET student_id = ? WHERE student_id = ?', [newId, oldId + 1000000]);
+        }
+
+        await connection.query('ALTER TABLE students AUTO_INCREMENT = 1');
+    } finally {
+        await connection.query('SET FOREIGN_KEY_CHECKS = 1');
+    }
+};
+
 // Delete a registration
 const deleteRegistration = async (req, res) => {
     const { id } = req.params;
+    const connection = await pool.getConnection();
+
     try {
-        const [result] = await pool.query('DELETE FROM registrations WHERE id = ?', [id]);
+        await connection.beginTransaction();
+
+        const [result] = await connection.query('DELETE FROM registrations WHERE id = ?', [id]);
 
         if (result.affectedRows === 0) {
+            await connection.rollback();
             return res.status(404).json({ success: false, message: 'Registration not found' });
         }
 
-        await pool.query(`
+        await connection.query(`
             DELETE FROM students 
             WHERE id NOT IN (SELECT DISTINCT student_id FROM registrations)
         `);
 
+        await resequenceStudentIds(connection);
+        await resetAutoIncrementCounters(connection);
+        await connection.commit();
+
         res.json({ success: true, message: 'Registration deleted successfully' });
     } catch (error) {
+        await connection.rollback();
         console.error('Delete registration error:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
+    } finally {
+        connection.release();
     }
 };
 
@@ -107,24 +156,35 @@ const bulkDeleteRegistrations = async (req, res) => {
         return res.status(400).json({ success: false, message: 'No registration IDs provided' });
     }
 
+    const connection = await pool.getConnection();
+
     try {
+        await connection.beginTransaction();
+
         const placeholders = ids.map(() => '?').join(',');
-        const [result] = await pool.query(
+        const [result] = await connection.query(
             `DELETE FROM registrations WHERE id IN (${placeholders})`, ids
         );
 
-        await pool.query(`
+        await connection.query(`
             DELETE FROM students 
             WHERE id NOT IN (SELECT DISTINCT student_id FROM registrations)
         `);
+
+        await resequenceStudentIds(connection);
+        await resetAutoIncrementCounters(connection);
+        await connection.commit();
 
         res.json({
             success: true,
             message: `${result.affectedRows} registration(s) deleted successfully`
         });
     } catch (error) {
+        await connection.rollback();
         console.error('Bulk delete error:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
+    } finally {
+        connection.release();
     }
 };
 
